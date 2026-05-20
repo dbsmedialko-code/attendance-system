@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — Attendance System</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --green:#1b4332;--green2:#2d6a4f;--green3:#52b788;
+  --gold:#c9a227;--navy:#1a3558;
+  --bg:#f3f6f3;--sidebar:#1b4332;
+  --text:#1a1a1a;--muted:#666;--border:#dde4dd;
+  --red:#c0392b;--orange:#e67e22;--blue:#2563a8;
+}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;min-height:100vh}
+/* Top bar */
+.topbar{background:var(--green);color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;
+  justify-content:space-between;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.topbar .brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800;letter-spacing:.5px}
+.topbar .brand span{font-size:22px}
+.topbar .right{display:flex;align-items:center;gap:14px;font-size:13px}
+.topbar .admin-chip{background:rgba(255,255,255,.15);padding:4px 12px;border-radius:14px;font-weight:600}
+.logout-btn{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;padding:5px 14px;
+  border-radius:6px;cursor:pointer;font-size:13px;transition:.2s}
+.logout-btn:hover{background:rgba(255,255,255,.15)}
+/* Layout */
+.layout{display:flex;flex:1;overflow:hidden}
+/* Sidebar */
+.sidebar{width:220px;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:13px 22px;color:rgba(255,255,255,.75);
+  cursor:pointer;font-size:14px;font-weight:500;transition:.2s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.12);color:#fff;border-left-color:var(--gold)}
+.nav-item .icon{font-size:17px;width:22px;text-align:center}
+.nav-divider{height:1px;background:rgba(255,255,255,.1);margin:8px 16px}
+/* Content */
+.content{flex:1;overflow-y:auto;padding:28px}
+.section{display:none}
+.section.active{display:block}
+/* Cards */
+.page-title{font-size:22px;font-weight:800;color:var(--green);margin-bottom:20px;
+  display:flex;align-items:center;gap:10px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:26px}
+.stat-card{background:#fff;border-radius:12px;padding:20px;border:1px solid var(--border);
+  box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.stat-card .num{font-size:32px;font-weight:900;color:var(--green);line-height:1}
+.stat-card .lbl{font-size:12px;color:var(--muted);margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.stat-card.orange .num{color:var(--orange)}
+.stat-card.red .num{color:var(--red)}
+.stat-card.blue .num{color:var(--blue)}
+.card{background:#fff;border-radius:12px;padding:22px;border:1px solid var(--border);
+  box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:20px}
+.card-title{font-size:15px;font-weight:700;color:var(--green);margin-bottom:16px;
+  display:flex;align-items:center;gap:8px}
+/* Forms */
+.form-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:16px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group select,.form-group textarea{
+  padding:9px 12px;border:2px solid var(--border);border-radius:8px;font-size:14px;
+  font-family:'Segoe UI',sans-serif;outline:none;transition:border .2s}
+.form-group input:focus,.form-group select:focus{border-color:var(--green)}
+/* Buttons */
+.btn{padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:700;
+  cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:var(--green2)}
+.btn-gold{background:var(--gold);color:#fff}.btn-gold:hover{background:#b8911f}
+.btn-red{background:var(--red);color:#fff}.btn-red:hover{background:#a93226}
+.btn-outline{background:#fff;color:var(--green);border:2px solid var(--green)}.btn-outline:hover{background:var(--bg)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn:disabled{background:#bbb;cursor:not-allowed}
+/* Table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f0f5f0;padding:10px 12px;text-align:left;font-weight:700;color:var(--green);
+  border-bottom:2px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #eef2ee;vertical-align:middle}
+tr:hover td{background:#f9fbf9}
+/* Badges */
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap}
+.badge-pending{background:#fff3cd;color:#856404;border:1px solid #ffc107}
+.badge-approved{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7}
+.badge-rejected{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+/* Alert */
+.alert{padding:11px 15px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none}
+.alert-success{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7}
+.alert-error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.alert-info{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+/* Upload area */
+.upload-zone{border:2px dashed var(--green3);border-radius:10px;padding:28px;text-align:center;
+  cursor:pointer;transition:.2s;background:#f8faf8}
+.upload-zone:hover{background:#edf7ef;border-color:var(--green)}
+.upload-zone .icon{font-size:36px;margin-bottom:10px}
+.upload-zone p{color:var(--muted);font-size:13px}
+/* Progress */
+.progress-bar{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:var(--green);border-radius:4px;transition:width .3s}
+/* Empty */
+.empty{text-align:center;padding:40px;color:var(--muted)}
+.empty .icon{font-size:40px;margin-bottom:12px}
+/* Leave config */
+.config-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.config-card{background:#f8faf8;border:2px solid var(--border);border-radius:10px;padding:18px}
+.config-card .cat{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.config-card .cat-icon{font-size:24px;display:block;margin-bottom:6px}
+.config-card input{width:100%;padding:10px;border:2px solid var(--border);border-radius:7px;
+  font-size:20px;font-weight:700;text-align:center;outline:none;transition:border .2s}
+.config-card input:focus{border-color:var(--green)}
+.config-card input.fixed{background:#f0f0f0;color:#888;cursor:not-allowed}
+/* Summary details */
+.summary-detail{background:#f8faf8;border-radius:8px;padding:14px;margin-top:8px;display:none}
+.summary-detail table{font-size:12px}
+.expand-btn{background:none;border:none;cursor:pointer;color:var(--blue);font-size:12px;font-weight:700}
+/* Modal */
+
+/* Notification bar */
+.notif-bar{position:fixed;top:56px;left:0;right:0;z-index:2000;background:#e67e22;color:#fff;
+  padding:13px 24px;display:none;align-items:center;justify-content:space-between;
+  box-shadow:0 4px 12px rgba(0,0,0,.3);animation:slideDown .3s ease}
+.notif-bar.show{display:flex}
+.notif-bar .notif-msg{font-size:14px;font-weight:700;display:flex;align-items:center;gap:10px}
+.notif-bar .notif-actions{display:flex;gap:10px}
+.notif-bar .notif-btn{background:#fff;color:#e67e22;border:none;padding:6px 14px;
+  border-radius:6px;font-weight:700;font-size:13px;cursor:pointer}
+.notif-bar .notif-dismiss{background:rgba(255,255,255,.25);color:#fff;border:1px solid rgba(255,255,255,.5);
+  padding:6px 14px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer}
+@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;
+  display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:28px;width:100%;max-width:480px;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative}
+.modal-title{font-size:17px;font-weight:800;margin-bottom:20px;color:var(--green)}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#888}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="brand"><span>🎖️</span> ATTENDANCE MANAGEMENT SYSTEM</div>
+  <div class="right">
+    <span class="admin-chip">👤 Admin</span>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<!-- Notification bar -->
+<div class="notif-bar" id="admin-notif-bar">
+  <div class="notif-msg">
+    <span style="font-size:20px">🔔</span>
+    <span id="admin-notif-text"></span>
+  </div>
+  <div class="notif-actions">
+    <button class="notif-btn" onclick="viewRequests()">View Requests</button>
+    <button class="notif-dismiss" onclick="dismissNotif()">Dismiss</button>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="nav-item active" onclick="navigate('dashboard')" id="nav-dashboard">
+      <span class="icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="navigate('students')" id="nav-students">
+      <span class="icon">👥</span> Students
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" onclick="navigate('leaveconfig')" id="nav-leaveconfig">
+      <span class="icon">📅</span> Leave Setup
+    </div>
+    <div class="nav-item" onclick="navigate('requests')" id="nav-requests">
+      <span class="icon">📋</span> Leave Requests
+      <span id="pending-badge" style="background:#e74c3c;color:#fff;font-size:10px;padding:1px 7px;border-radius:10px;margin-left:auto;display:none">0</span>
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" onclick="navigate('summary')" id="nav-summary">
+      <span class="icon">📈</span> Summary
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <main class="content">
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="sec-dashboard">
+      <div class="page-title">📊 Dashboard</div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="num" id="stat-students">—</div>
+          <div class="lbl">Total Students</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="num" id="stat-pending">—</div>
+          <div class="lbl">Pending Requests</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="num" id="stat-approved">—</div>
+          <div class="lbl">Total Approved</div>
+        </div>
+        <div class="stat-card red">
+          <div class="num" id="stat-exhausted">—</div>
+          <div class="lbl">Quota Exhausted</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚡ Quick Actions</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-green" onclick="navigate('students')">👥 Manage Students</button>
+          <button class="btn btn-gold" onclick="navigate('requests')">📋 Review Leave Requests</button>
+          <button class="btn btn-outline" onclick="navigate('leaveconfig')">📅 Configure Leaves</button>
+          <button class="btn btn-red" onclick="resetDemo()" style="margin-left:auto">🗑️ Reset Demo Data</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div class="section" id="sec-students">
+      <div class="page-title">👥 Student Management</div>
+
+      <!-- Upload card -->
+      <div class="card">
+        <div class="card-title">📤 Bulk Upload Students</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <button class="btn btn-outline" onclick="downloadSample()">⬇️ Download Sample Excel</button>
+          <button class="btn btn-green" onclick="document.getElementById('excelInput').click()">📂 Upload Excel File</button>
+          <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" onchange="uploadExcel(this)">
+        </div>
+        <div class="alert" id="upload-alert"></div>
+        <div style="font-size:12px;color:var(--muted)">
+          Required columns: <strong>SR_No, Student_Name, Father_Name, Class_Section, DOB</strong><br>
+          Login will be created as: Username = <code>cdt{SR_No}</code> &nbsp;|&nbsp; Password = <code>sainiklko</code>
+        </div>
+      </div>
+
+      <!-- Students table -->
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          <span>👤 Registered Students</span>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input type="text" id="studentSearch" placeholder="🔍 Search..." style="padding:7px 12px;border:2px solid var(--border);border-radius:7px;font-size:13px;outline:none;width:200px" oninput="filterStudents()">
+            <button class="btn btn-red btn-sm" onclick="clearAllStudents()">🗑️ Clear All</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>SR No</th><th>Name</th><th>Father Name</th>
+                <th>Class/Section</th><th>DOB</th><th>Username</th>
+                <th>Emergency Leave</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="students-tbody">
+              <tr><td colspan="8"><div class="empty"><div class="icon">👥</div>No students registered</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="student-count" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
+      </div>
+    </div>
+
+    <!-- LEAVE CONFIG -->
+    <div class="section" id="sec-leaveconfig">
+      <div class="page-title">📅 Leave Configuration</div>
+      <div class="card">
+        <div class="card-title">Set Annual Leave Days</div>
+        <div class="alert" id="config-alert"></div>
+        <div class="config-grid" id="config-grid">
+          <!-- rendered by JS -->
+        </div>
+        <div style="margin-top:20px">
+          <button class="btn btn-green" onclick="saveConfig()">💾 Save Configuration</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEAVE REQUESTS -->
+    <div class="section" id="sec-requests">
+      <div class="page-title">📋 Leave Requests</div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="loadRequests('all')" id="filter-all">All</button>
+        <button class="btn btn-gold" onclick="loadRequests('pending')" id="filter-pending">Pending</button>
+        <button class="btn btn-green" onclick="loadRequests('approved')" id="filter-approved">Approved</button>
+        <button class="btn btn-red" onclick="loadRequests('rejected')" id="filter-rejected">Rejected</button>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>SR No</th><th>Student</th><th>Class</th>
+                <th>Reason</th><th>Days</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="requests-tbody">
+              <tr><td colspan="8"><div class="empty"><div class="icon">📋</div>No requests</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="section" id="sec-summary">
+      <div class="page-title">📈 Student Leave Summary</div>
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          <span>Complete Leave Record</span>
+          <input type="text" id="summarySearch" placeholder="🔍 Search student..."
+            style="padding:7px 12px;border:2px solid var(--border);border-radius:7px;font-size:13px;outline:none;width:200px"
+            oninput="filterSummary()">
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>SR No</th><th>Name</th><th>Class</th>
+                <th>Total Requests</th><th>Approved Days</th><th>Remaining Days</th><th>Status</th><th>Details</th></tr>
+            </thead>
+            <tbody id="summary-tbody">
+              <tr><td colspan="8"><div class="empty"><div class="icon">📈</div>No data</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Action Modal -->
+<div class="modal-overlay" id="actionModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title" id="modal-title">Review Request</div>
+    <div id="modal-body"></div>
+    <div class="form-group" style="margin-top:16px">
+      <label>Admin Note (optional)</label>
+      <textarea id="modal-note" rows="3" placeholder="Add a note for the student..."
+        style="padding:9px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:'Segoe UI',sans-serif;outline:none;resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn btn-green" id="modal-approve-btn">✅ Approve</button>
+      <button class="btn btn-red"   id="modal-reject-btn">❌ Reject</button>
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let allStudents   = [];
+let allRequests   = [];
+let allSummary    = [];
+let currentFilter = 'all';
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  checkAuth();
+  navigate('dashboard');
+});
+
+async function checkAuth() {
+  const r = await fetch('/api/auth/me');
+  if (!r.ok) window.location.href = '/admin/login';
+}
+
+// ── Navigation ───────────────────────────────────────────────────────────────
+function navigate(sec) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + sec).classList.add('active');
+  document.getElementById('nav-' + sec).classList.add('active');
+
+  if (sec === 'dashboard')   loadDashboard();
+  if (sec === 'students')    loadStudents();
+  if (sec === 'leaveconfig') loadConfig();
+  if (sec === 'requests')    loadRequests(currentFilter);
+  if (sec === 'summary')     loadSummary();
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const r = await fetch('/api/admin/stats');
+    const d = await r.json();
+    document.getElementById('stat-students').textContent  = d.totalStudents;
+    document.getElementById('stat-pending').textContent   = d.pendingCount;
+    document.getElementById('stat-approved').textContent  = d.approvedCount;
+    document.getElementById('stat-exhausted').textContent = d.exhaustedCount;
+    updatePendingBadge(d.pendingCount);
+  } catch(e) {}
+}
+
+function updatePendingBadge(n) {
+  const b = document.getElementById('pending-badge');
+  b.textContent = n; b.style.display = n > 0 ? 'inline-block' : 'none';
+}
+
+// ── Students ─────────────────────────────────────────────────────────────────
+async function loadStudents() {
+  try {
+    const r = await fetch('/api/admin/students');
+    allStudents = await r.json();
+    renderStudents(allStudents);
+  } catch(e) {}
+}
+
+function renderStudents(list) {
+  const tbody = document.getElementById('students-tbody');
+  const count = document.getElementById('student-count');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="icon">👥</div>No students registered</div></td></tr>`;
+    count.textContent = '';
+    return;
+  }
+  tbody.innerHTML = list.map(s => {
+    const used = s.emergency_used, total = s.emergency_total;
+    const rem  = total - used;
+    const pct  = (used / total) * 100;
+    const barColor = pct >= 100 ? '#c0392b' : pct >= 70 ? '#e67e22' : '#1b4332';
+    return `
+    <tr>
+      <td><strong>${s.sr_no}</strong></td>
+      <td>${s.name}</td>
+      <td>${s.father_name || '—'}</td>
+      <td>${s.class_section || '—'}</td>
+      <td>${s.dob || '—'}</td>
+      <td><code style="background:#f0f4f0;padding:2px 7px;border-radius:5px">${s.username}</code></td>
+      <td>
+        <div style="font-size:12px;font-weight:600;color:${barColor}">${used}/${total} days used</div>
+        <div class="progress-bar" style="margin-top:5px;width:100px">
+          <div class="progress-fill" style="width:${pct}%;background:${barColor}"></div>
+        </div>
+      </td>
+      <td>
+        <button class="btn btn-red btn-sm" onclick="deleteStudent('${s._id}','${s.name}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+  count.textContent = `Showing ${list.length} student(s)`;
+}
+
+function filterStudents() {
+  const q = document.getElementById('studentSearch').value.toLowerCase();
+  if (!q) { renderStudents(allStudents); return; }
+  renderStudents(allStudents.filter(s =>
+    s.name.toLowerCase().includes(q) ||
+    s.sr_no.includes(q) ||
+    (s.father_name||'').toLowerCase().includes(q) ||
+    (s.class_section||'').toLowerCase().includes(q)
+  ));
+}
+
+async function deleteStudent(id, name) {
+  if (!confirm(`Delete student "${name}"? This also deletes all their leave requests.`)) return;
+  try {
+    const r = await fetch(`/api/admin/students/${id}`, { method: 'DELETE' });
+    const d = await r.json();
+    if (d.success) { showAlert('upload-alert','success',`Student "${name}" deleted.`); loadStudents(); }
+    else showAlert('upload-alert','error', d.error);
+  } catch(e) {}
+}
+
+async function clearAllStudents() {
+  if (!confirm('Delete ALL students and their leave records? This cannot be undone.')) return;
+  try {
+    const r = await fetch('/api/admin/students', { method: 'DELETE' });
+    const d = await r.json();
+    if (d.success) { showAlert('upload-alert','success','All students cleared.'); loadStudents(); }
+  } catch(e) {}
+}
+
+// ── Excel upload ─────────────────────────────────────────────────────────────
+async function uploadExcel(input) {
+  const file = input.files[0]; if (!file) return;
+  showAlert('upload-alert','info','⏳ Uploading and processing...');
+  const form = new FormData(); form.append('file', file);
+  try {
+    const r = await fetch('/api/admin/students/bulk', { method: 'POST', body: form });
+    const d = await r.json();
+    if (d.success) {
+      let msg = `✅ Done — ${d.created} created, ${d.updated} updated.`;
+      if (d.errors && d.errors.length) msg += `<br>⚠️ ${d.errors.length} row(s) had issues.`;
+      showAlert('upload-alert','success', msg);
+      loadStudents(); loadDashboard();
+    } else showAlert('upload-alert','error', d.error);
+  } catch(e) { showAlert('upload-alert','error','Upload failed.'); }
+  input.value = '';
+}
+
+function downloadSample() {
+  const wb = XLSX.utils.book_new();
+  const data = [
+    ['SR_No','Student_Name','Father_Name','Class_Section','DOB'],
+    ['1','Arjun Singh','Rajendra Singh','X-A','2008-05-15'],
+    ['2','Priya Sharma','Mohan Sharma','X-A','2008-03-22'],
+    ['3','Kabir Mehta','Suresh Mehta','X-B','2007-11-10'],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  // Column widths
+  ws['!cols'] = [{wch:8},{wch:22},{wch:22},{wch:15},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Students');
+  XLSX.writeFile(wb, 'Student_Registration_Sample.xlsx');
+}
+
+// ── Leave config ─────────────────────────────────────────────────────────────
+const CONFIG_FIELDS = [
+  { key:'public_holiday',   label:'Public Holiday',   icon:'🏛️', editable:true },
+  { key:'gazetted_holiday', label:'Gazetted Holiday',  icon:'📜', editable:true },
+  { key:'summer_vacation',  label:'Summer Vacation',   icon:'☀️', editable:true },
+  { key:'winter_vacation',  label:'Winter Vacation',   icon:'❄️', editable:true },
+  { key:'emergency_leave',  label:'Emergency / Medical Leave', icon:'🏥', editable:false },
+];
+
+async function loadConfig() {
+  try {
+    const r = await fetch('/api/admin/leave-config');
+    const d = await r.json();
+    const grid = document.getElementById('config-grid');
+    grid.innerHTML = CONFIG_FIELDS.map(f => `
+      <div class="config-card">
+        <span class="cat-icon">${f.icon}</span>
+        <div class="cat">${f.label}</div>
+        <input type="number" id="cfg-${f.key}" value="${d[f.key] || 0}" min="0"
+          ${f.editable ? '' : 'readonly class="fixed"'}
+          placeholder="Days">
+        <div style="font-size:11px;color:var(--muted);margin-top:5px">
+          ${f.editable ? 'Set number of days' : 'Fixed at 7 days (not editable)'}
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {}
+}
+
+async function saveConfig() {
+  const body = {};
+  CONFIG_FIELDS.filter(f => f.editable).forEach(f => {
+    body[f.key] = parseInt(document.getElementById('cfg-'+f.key).value) || 0;
+  });
+  try {
+    const r = await fetch('/api/admin/leave-config', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (d.success) showAlert('config-alert','success','✅ Leave configuration saved successfully.');
+    else showAlert('config-alert','error', d.error);
+  } catch(e) { showAlert('config-alert','error','Save failed.'); }
+}
+
+// ── Leave requests ────────────────────────────────────────────────────────────
+async function loadRequests(filter) {
+  currentFilter = filter || 'all';
+  ['all','pending','approved','rejected'].forEach(f => {
+    const btn = document.getElementById('filter-'+f);
+    if (btn) btn.style.fontWeight = f === currentFilter ? '800' : '600';
+  });
+  try {
+    const qs = currentFilter !== 'all' ? `?status=${currentFilter}` : '';
+    const r = await fetch('/api/admin/leave-requests' + qs);
+    allRequests = await r.json();
+    renderRequests(allRequests);
+    updatePendingBadge(allRequests.filter(x => x.status==='pending').length);
+  } catch(e) {}
+}
+
+function renderRequests(list) {
+  const tbody = document.getElementById('requests-tbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="icon">📋</div>No requests found</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(req => {
+    const date = new Date(req.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+    const badgeCls = `badge-${req.status}`;
+    const actionBtns = req.status === 'pending'
+      ? `<button class="btn btn-sm btn-green" onclick="openModal('${req._id}')">Review</button>`
+      : `<span style="font-size:12px;color:var(--muted)">${req.admin_note ? '📝 '+req.admin_note.substring(0,30) : 'No note'}</span>`;
+    return `
+    <tr>
+      <td style="white-space:nowrap">${date}</td>
+      <td><strong>${req.sr_no}</strong></td>
+      <td>${req.student_name}</td>
+      <td>${req.class_section || '—'}</td>
+      <td style="max-width:200px">${req.reason}</td>
+      <td style="text-align:center;font-weight:700">${req.days_requested}</td>
+      <td><span class="badge ${badgeCls}">${req.status.toUpperCase()}</span></td>
+      <td>${actionBtns}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+let currentRequestId = null;
+
+function openModal(id) {
+  const req = allRequests.find(r => r._id === id);
+  if (!req) return;
+  currentRequestId = id;
+  document.getElementById('modal-title').textContent = `Review Leave Request — ${req.student_name}`;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="background:#f8faf8;border-radius:8px;padding:14px;font-size:13px;line-height:1.8">
+      <strong>SR No:</strong> ${req.sr_no}<br>
+      <strong>Class:</strong> ${req.class_section || '—'}<br>
+      <strong>Days Requested:</strong> <span style="color:var(--orange);font-weight:700">${req.days_requested} day(s)</span><br>
+      <strong>Reason:</strong> ${req.reason}
+    </div>`;
+  document.getElementById('modal-note').value = '';
+  document.getElementById('modal-approve-btn').onclick = () => processRequest('approve');
+  document.getElementById('modal-reject-btn').onclick  = () => processRequest('reject');
+  document.getElementById('actionModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('actionModal').classList.remove('open');
+  currentRequestId = null;
+}
+
+async function processRequest(action) {
+  if (!currentRequestId) return;
+  const note = document.getElementById('modal-note').value.trim();
+  try {
+    const r = await fetch(`/api/admin/leave-requests/${currentRequestId}`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action, admin_note: note })
+    });
+    const d = await r.json();
+    if (d.success) {
+      closeModal();
+      loadRequests(currentFilter);
+      loadDashboard();
+    } else alert(d.error);
+  } catch(e) { alert('Error processing request.'); }
+}
+
+// ── Summary ───────────────────────────────────────────────────────────────────
+async function loadSummary() {
+  try {
+    const r = await fetch('/api/admin/summary');
+    allSummary = await r.json();
+    renderSummary(allSummary);
+  } catch(e) {}
+}
+
+function renderSummary(list) {
+  const tbody = document.getElementById('summary-tbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="icon">📈</div>No students found</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map((s, idx) => {
+    const total = s.requests.length;
+    const approved = s.requests.filter(r => r.status === 'approved');
+    const approvedDays = approved.reduce((a, r) => a + r.days_requested, 0);
+    const remaining = s.emergency_total - s.emergency_used;
+    const statusBadge = s.emergency_used >= s.emergency_total
+      ? `<span class="badge badge-rejected">EXHAUSTED</span>`
+      : remaining <= 2
+        ? `<span class="badge badge-pending">${remaining} day(s) left</span>`
+        : `<span class="badge badge-approved">${remaining} day(s) left</span>`;
+
+    const detailRows = s.requests.map(req => {
+      const d = new Date(req.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'});
+      return `<tr>
+        <td>${d}</td><td>${req.days_requested}d</td>
+        <td><span class="badge badge-${req.status}">${req.status.toUpperCase()}</span></td>
+        <td style="max-width:160px;font-size:11px">${req.reason}</td>
+        <td style="font-size:11px;color:var(--muted)">${req.admin_note || '—'}</td>
+      </tr>`;
+    }).join('');
+
+    return `
+    <tr>
+      <td><strong>${s.sr_no}</strong></td>
+      <td>${s.name}</td>
+      <td>${s.class_section || '—'}</td>
+      <td style="text-align:center">${total}</td>
+      <td style="text-align:center;font-weight:700;color:var(--orange)">${approvedDays}</td>
+      <td style="text-align:center;font-weight:700;color:var(--green)">${remaining}</td>
+      <td>${statusBadge}</td>
+      <td>
+        ${total > 0
+          ? `<button class="expand-btn" onclick="toggleDetail(${idx})">▶ View (${total})</button>`
+          : '<span style="font-size:11px;color:var(--muted)">No requests</span>'}
+      </td>
+    </tr>
+    ${total > 0 ? `
+    <tr id="detail-row-${idx}" style="display:none">
+      <td colspan="8">
+        <div class="summary-detail" style="display:block">
+          <table>
+            <thead><tr><th>Date</th><th>Days</th><th>Status</th><th>Reason</th><th>Note</th></tr></thead>
+            <tbody>${detailRows}</tbody>
+          </table>
+        </div>
+      </td>
+    </tr>` : ''}`;
+  }).join('');
+}
+
+function toggleDetail(idx) {
+  const row = document.getElementById('detail-row-'+idx);
+  if (!row) return;
+  const hidden = row.style.display === 'none';
+  row.style.display = hidden ? 'table-row' : 'none';
+}
+
+function filterSummary() {
+  const q = document.getElementById('summarySearch').value.toLowerCase();
+  if (!q) { renderSummary(allSummary); return; }
+  renderSummary(allSummary.filter(s =>
+    s.name.toLowerCase().includes(q) ||
+    s.sr_no.includes(q) ||
+    (s.class_section||'').toLowerCase().includes(q)
+  ));
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = `alert alert-${type}`; el.innerHTML = msg; el.style.display = 'block';
+  if (type === 'success') setTimeout(() => { el.style.display='none'; }, 5000);
+}
+
+async function logout() {
+  await fetch('/api/auth/logout', { method:'POST' });
+  window.location.href = '/admin/login';
+}
+
+async function resetDemo() {
+  if (!confirm('This will delete ALL students, leave requests and leave config.\nAdmin login will be kept.\n\nProceed?')) return;
+  try {
+    const r = await fetch('/api/admin/reset-demo', { method: 'DELETE' });
+    const d = await r.json();
+    if (d.success) {
+      alert('✅ All demo data cleared. Admin login is intact.');
+      loadDashboard();
+      allStudents = []; allRequests = []; allSummary = [];
+    } else alert('Error: ' + d.error);
+  } catch(e) { alert('Reset failed.'); }
+}
+
+// ── Notification sound & bar ─────────────────────────────────────────────────
+let notifSoundInterval = null;
+let pendingNotifCount  = 0;
+let audioCtx           = null;
+
+// Unlock AudioContext on first user interaction
+document.addEventListener('click', () => {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } else if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}, { once: false });
+
+function playNotifSound() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const seq = [[880,0],[660,0.18],[880,0.32],[1100,0.46]];
+    seq.forEach(([freq, t]) => {
+      const osc  = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + t);
+      gain.gain.setValueAtTime(0.35, audioCtx.currentTime + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + t + 0.16);
+      osc.start(audioCtx.currentTime + t);
+      osc.stop(audioCtx.currentTime + t + 0.18);
+    });
+  } catch(_) {}
+}
+
+function startNotifLoop() {
+  playNotifSound();
+  if (!notifSoundInterval)
+    notifSoundInterval = setInterval(playNotifSound, 4000);
+}
+
+function stopNotifLoop() {
+  clearInterval(notifSoundInterval);
+  notifSoundInterval = null;
+}
+
+function showNotifBar(msg) {
+  document.getElementById('admin-notif-text').textContent = msg;
+  document.getElementById('admin-notif-bar').classList.add('show');
+  startNotifLoop();
+}
+
+function dismissNotif() {
+  document.getElementById('admin-notif-bar').classList.remove('show');
+  stopNotifLoop();
+  pendingNotifCount = 0;
+}
+
+function viewRequests() {
+  dismissNotif();
+  navigate('requests');
+}
+
+// ── SSE ──────────────────────────────────────────────────────────────────────
+function initSSE() {
+  const es = new EventSource('/api/events/admin');
+
+  es.addEventListener('new-request', e => {
+    const d = JSON.parse(e.data);
+    pendingNotifCount++;
+    const cur = parseInt(document.getElementById('pending-badge').textContent || '0');
+    updatePendingBadge(cur + 1);
+    if (document.getElementById('sec-requests').classList.contains('active'))
+      loadRequests(currentFilter);
+    const msg = pendingNotifCount > 1
+      ? pendingNotifCount + ' new leave requests pending'
+      : 'New leave request from ' + d.student_name + ' (' + d.days + ' day/s)';
+    showNotifBar(msg);
+  });
+
+  es.addEventListener('stats-updated', () => {
+    loadDashboard();
+    if (document.getElementById('sec-requests').classList.contains('active'))
+      loadRequests(currentFilter);
+    if (document.getElementById('sec-summary').classList.contains('active'))
+      loadSummary();
+  });
+
+  es.addEventListener('config-updated', () => {
+    if (document.getElementById('sec-leaveconfig').classList.contains('active'))
+      loadConfig();
+  });
+
+  es.onerror = () => { setTimeout(initSSE, 5000); es.close(); };
+}
+initSSE();
+
+// Close modal on overlay click
+document.getElementById('actionModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>

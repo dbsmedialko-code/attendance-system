@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Login — Attendance System</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--navy:#1a3558;--gold:#c9a227;--red:#c0392b}
+  body{min-height:100vh;background:linear-gradient(135deg,#1a3558 0%,#2563a8 60%,#1a3558 100%);
+    display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif}
+  .card{background:#fff;border-radius:16px;padding:40px 36px;width:100%;max-width:420px;
+    box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  .logo{text-align:center;margin-bottom:28px}
+  .logo .star{font-size:48px;line-height:1}
+  .logo h1{color:var(--navy);font-size:20px;font-weight:800;margin-top:8px;letter-spacing:1px}
+  .logo p{color:#666;font-size:13px;margin-top:4px}
+  .badge{display:inline-block;background:var(--navy);color:#fff;font-size:11px;font-weight:700;
+    padding:3px 12px;border-radius:20px;letter-spacing:1px;margin-bottom:20px}
+  label{display:block;font-size:13px;font-weight:600;color:#333;margin-bottom:5px}
+  input{width:100%;padding:11px 14px;border:2px solid #e0e0e0;border-radius:8px;
+    font-size:14px;outline:none;transition:border .2s}
+  input:focus{border-color:var(--navy)}
+  .field{margin-bottom:18px}
+  .btn{width:100%;padding:13px;background:var(--navy);color:#fff;border:none;border-radius:8px;
+    font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:background .2s;margin-top:6px}
+  .btn:hover{background:#1f4272}
+  .btn:disabled{background:#aaa;cursor:not-allowed}
+  .hint{background:#eef4ff;border:1px solid #c3d9f5;border-radius:8px;padding:11px 14px;
+    font-size:12.5px;color:#1a3558;margin-bottom:18px;line-height:1.6}
+  .hint strong{display:block;margin-bottom:4px;font-size:13px}
+  .err{background:#fdecea;color:var(--red);border:1px solid #f5c6c6;border-radius:7px;
+    padding:10px 14px;font-size:13px;margin-top:14px;display:none}
+  .footer{text-align:center;margin-top:22px;font-size:12px;color:#888}
+  .footer a{color:var(--navy);text-decoration:none;font-weight:600}
+  .divider{height:1px;background:#eee;margin:20px 0}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="star">🎓</div>
+    <h1>ATTENDANCE SYSTEM</h1>
+    <p>Student Leave Portal</p>
+  </div>
+  <div style="text-align:center">
+    <span class="badge">STUDENT LOGIN</span>
+  </div>
+  <div class="hint">
+    <strong>📋 Login Credentials</strong>
+    <b>Username:</b> cdt + your SR No &nbsp;(e.g. <code>cdt1</code>, <code>cdt15</code>)<br>
+    <b>Password:</b> sainiklko
+  </div>
+  <div class="field">
+    <label>Username</label>
+    <input type="text" id="username" placeholder="e.g. cdt1" autocomplete="username">
+  </div>
+  <div class="field">
+    <label>Password</label>
+    <input type="password" id="password" placeholder="Enter password" autocomplete="current-password">
+  </div>
+  <button class="btn" id="loginBtn" onclick="doLogin()">LOGIN TO STUDENT PORTAL</button>
+  <div class="err" id="errBox"></div>
+  <div class="divider"></div>
+  <div class="footer">
+    Admin? <a href="/admin/login">Go to Admin Panel →</a>
+  </div>
+</div>
+<script>
+  document.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+  async function doLogin() {
+    const btn = document.getElementById('loginBtn');
+    const err = document.getElementById('errBox');
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if (!username || !password) { showErr('Please enter username and password.'); return; }
+    btn.disabled = true; btn.textContent = 'Logging in...';
+    err.style.display = 'none';
+    try {
+      const r = await fetch('/api/auth/student/login', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ username, password })
+      });
+      const d = await r.json();
+      if (d.success) { window.location.href = '/student'; }
+      else showErr(d.error || 'Login failed.');
+    } catch(e) { showErr('Server error. Try again.'); }
+    finally { btn.disabled = false; btn.textContent = 'LOGIN TO STUDENT PORTAL'; }
+  }
+
+  function showErr(msg) {
+    const e = document.getElementById('errBox');
+    e.textContent = '⚠️ ' + msg;
+    e.style.display = 'block';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Portal — Attendance System</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--navy:#1a3558;--gold:#c9a227;--green:#1b4332;--bg:#f0f4f8;--red:#c0392b;--orange:#e67e22}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#1a1a1a;min-height:100vh}
+/* Top bar */
+.topbar{background:var(--navy);color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;
+  justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.topbar .brand{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800;letter-spacing:.5px}
+.topbar .right{display:flex;align-items:center;gap:12px;font-size:13px}
+.student-chip{background:rgba(255,255,255,.15);padding:4px 14px;border-radius:14px;font-weight:600;font-size:13px}
+.logout-btn{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;
+  padding:5px 14px;border-radius:6px;cursor:pointer;font-size:13px}
+.logout-btn:hover{background:rgba(255,255,255,.15)}
+/* Main */
+.main{max-width:1000px;margin:0 auto;padding:28px 20px}
+.section-title{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:16px;
+  display:flex;align-items:center;gap:8px;border-bottom:3px solid var(--gold);padding-bottom:8px}
+/* Leave cards */
+.leave-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:16px;margin-bottom:30px}
+.leave-card{background:#fff;border-radius:14px;padding:20px;text-align:center;
+  box-shadow:0 3px 12px rgba(0,0,0,.08);border:2px solid transparent;transition:.3s;position:relative}
+.leave-card:hover{transform:translateY(-2px)}
+.leave-card .card-icon{font-size:36px;margin-bottom:10px;display:block}
+.leave-card .card-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#777;margin-bottom:6px}
+.leave-card .card-days{font-size:32px;font-weight:900;line-height:1}
+.leave-card .card-sub{font-size:11px;color:#999;margin-top:4px}
+.leave-card.public   {border-color:#3498db;background:linear-gradient(135deg,#fff 0%,#ebf5fb 100%)}
+.leave-card.public   .card-days{color:#2980b9}
+.leave-card.gazetted {border-color:#9b59b6;background:linear-gradient(135deg,#fff 0%,#f5eef8 100%)}
+.leave-card.gazetted .card-days{color:#7d3c98}
+.leave-card.summer   {border-color:#f39c12;background:linear-gradient(135deg,#fff 0%,#fef9e7 100%)}
+.leave-card.summer   .card-days{color:#d68910}
+.leave-card.winter   {border-color:#1abc9c;background:linear-gradient(135deg,#fff 0%,#eafaf1 100%)}
+.leave-card.winter   .card-days{color:#17a589}
+.leave-card.emergency{border-color:#e74c3c;background:linear-gradient(135deg,#fff 0%,#fdedec 100%)}
+.leave-card.emergency .card-days{color:#c0392b}
+.leave-card.exhausted{background:#f5f5f5;border-color:#ccc;opacity:.6;filter:grayscale(.8)}
+.leave-card.exhausted .card-days{color:#999}
+.leave-card.exhausted::after{content:'EXHAUSTED';position:absolute;top:10px;right:10px;
+  background:#aaa;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.5px}
+/* Progress bar */
+.prog-wrap{margin-top:10px}
+.prog-label{display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:4px}
+.prog-bar{height:7px;background:#e0e0e0;border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;border-radius:4px;transition:width .5s}
+/* Card section */
+.card{background:#fff;border-radius:14px;padding:24px;box-shadow:0 3px 12px rgba(0,0,0,.08);margin-bottom:24px}
+.card-title{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:16px}
+/* Form */
+.form-group{margin-bottom:15px}
+.form-group label{display:block;font-size:12px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.form-group input,.form-group textarea,.form-group select{
+  width:100%;padding:10px 13px;border:2px solid #dde;border-radius:8px;
+  font-size:14px;font-family:'Segoe UI',sans-serif;outline:none;transition:border .2s}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--navy)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:700;
+  cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.btn-navy{background:var(--navy);color:#fff}.btn-navy:hover{background:#1f4272}
+.btn-gold{background:var(--gold);color:#fff}.btn-gold:hover{background:#b8911f}
+.btn:disabled{background:#bbb;cursor:not-allowed}
+/* Alert */
+.alert{padding:12px 15px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;line-height:1.5}
+.alert-success{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7}
+.alert-error  {background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.alert-warning{background:#fff3cd;color:#856404;border:1px solid #ffc107}
+/* Table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f0f4f8;padding:10px 12px;text-align:left;font-weight:700;color:var(--navy);
+  border-bottom:2px solid #dde4ee}
+td{padding:10px 12px;border-bottom:1px solid #eef2ee}
+tr:hover td{background:#f9fbff}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700}
+.badge-pending {background:#fff3cd;color:#856404;border:1px solid #ffc107}
+.badge-approved{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7}
+.badge-rejected{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.empty{text-align:center;padding:30px;color:#aaa;font-size:13px}
+/* Alert banner */
+
+/* Notification bar */
+.notif-bar{position:fixed;top:56px;left:0;right:0;z-index:2000;color:#fff;
+  padding:13px 24px;display:none;align-items:center;justify-content:space-between;
+  box-shadow:0 4px 12px rgba(0,0,0,.3);animation:slideDown .3s ease}
+.notif-bar.approved{background:#1b4332}
+.notif-bar.rejected{background:#c0392b}
+.notif-bar.show{display:flex}
+.notif-bar .notif-msg{font-size:14px;font-weight:700;display:flex;align-items:center;gap:10px}
+.notif-bar .notif-dismiss{background:rgba(255,255,255,.25);color:#fff;border:1px solid rgba(255,255,255,.5);
+  padding:6px 14px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer}
+@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+.quota-banner{background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff;border-radius:12px;
+  padding:18px 22px;margin-bottom:24px;display:none}
+.quota-banner h3{font-size:16px;margin-bottom:6px}
+.quota-banner p{font-size:13px;opacity:.9}
+</style>
+</head>
+<body>
+
+<!-- Notification bar -->
+<div class="notif-bar" id="student-notif-bar">
+  <div class="notif-msg">
+    <span id="student-notif-icon" style="font-size:20px"></span>
+    <span id="student-notif-text"></span>
+  </div>
+  <button class="notif-dismiss" onclick="dismissNotif()">✓ OK</button>
+</div>
+
+<div class="topbar">
+  <div class="brand"><span>🎓</span> ATTENDANCE SYSTEM</div>
+  <div class="right">
+    <span class="student-chip" id="student-chip">Loading...</span>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Quota exhausted banner -->
+  <div class="quota-banner" id="quota-banner">
+    <h3>⚠️ Emergency Leave Quota Exhausted</h3>
+    <p>You have used all 7 emergency leave days. For any further leave, please visit the <strong>Principal's Office</strong> with proper evidence.</p>
+  </div>
+
+  <!-- Leave entitlement -->
+  <div class="section-title">🗓️ Your Annual Leave Entitlement</div>
+  <div class="leave-grid" id="leave-grid">
+    <!-- rendered by JS -->
+  </div>
+
+  <!-- Raise request -->
+  <div id="request-section">
+    <div class="section-title">📝 Raise Emergency Leave Request</div>
+    <div class="card">
+      <div class="card-title">Submit Leave Application</div>
+      <div class="alert" id="req-alert"></div>
+      <div id="quota-info" style="font-size:13px;color:#555;margin-bottom:16px"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Number of Days</label>
+          <input type="number" id="req-days" min="1" max="7" placeholder="Enter days (max 7)">
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <div id="remaining-display" style="padding:10px 13px;background:#f0f4f8;border-radius:8px;font-size:13px;color:var(--navy);font-weight:600"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Reason / Details</label>
+        <textarea id="req-reason" rows="4" placeholder="Describe the reason for your leave request in detail..."></textarea>
+      </div>
+      <button class="btn btn-navy" id="submit-btn" onclick="submitRequest()">📤 Submit Request</button>
+    </div>
+  </div>
+
+  <!-- My requests -->
+  <div class="section-title" style="margin-top:10px">📋 My Leave Requests</div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Days Requested</th><th>Reason</th><th>Status</th><th>Admin Note</th></tr>
+        </thead>
+        <tbody id="my-requests-tbody">
+          <tr><td colspan="5"><div class="empty">No requests submitted yet</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let studentData   = null;
+let leaveConfig   = null;
+let alertPlayed   = false;
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => { loadDashboard(); loadMyRequests(); });
+
+async function loadDashboard() {
+  try {
+    const r = await fetch('/api/student/dashboard');
+    if (!r.ok) { window.location.href = '/student/login'; return; }
+    const d = await r.json();
+    studentData = d.student;
+    leaveConfig = d.config;
+    renderHeader();
+    renderLeaveCards();
+    renderQuotaInfo();
+  } catch(e) { window.location.href = '/student/login'; }
+}
+
+function renderHeader() {
+  document.getElementById('student-chip').textContent =
+    `👤 ${studentData.username.toUpperCase()} — ${studentData.name}`;
+}
+
+function renderLeaveCards() {
+  const used  = studentData.emergency_used;
+  const total = studentData.emergency_total;
+  const rem   = total - used;
+  const pct   = Math.min((used / total) * 100, 100);
+  const barColor = pct >= 100 ? '#c0392b' : pct >= 70 ? '#e67e22' : '#1b4332';
+  const exhausted = rem <= 0;
+
+  // Show quota banner + play sound if exhausted
+  if (exhausted) {
+    document.getElementById('quota-banner').style.display = 'block';
+    if (!alertPlayed) { playAlertSound(); alertPlayed = true; }
+  }
+
+  const cards = [
+    { cls:'public',   icon:'🏛️', label:'Public Holiday',       days: leaveConfig.public_holiday,   sub:'National holidays' },
+    { cls:'gazetted', icon:'📜', label:'Gazetted Holiday',      days: leaveConfig.gazetted_holiday, sub:'Govt. gazetted days' },
+    { cls:'summer',   icon:'☀️', label:'Summer Vacation',       days: leaveConfig.summer_vacation,  sub:'Summer break' },
+    { cls:'winter',   icon:'❄️', label:'Winter Vacation',       days: leaveConfig.winter_vacation,  sub:'Winter break' },
+  ];
+
+  const staticCards = cards.map(c => `
+    <div class="leave-card ${c.cls}">
+      <span class="card-icon">${c.icon}</span>
+      <div class="card-label">${c.label}</div>
+      <div class="card-days">${c.days}</div>
+      <div class="card-sub">${c.sub}</div>
+    </div>`).join('');
+
+  const emergencyCard = `
+    <div class="leave-card emergency ${exhausted ? 'exhausted' : ''}">
+      <span class="card-icon">🏥</span>
+      <div class="card-label">Emergency / Medical</div>
+      <div class="card-days">${rem}</div>
+      <div class="card-sub">Days remaining</div>
+      <div class="prog-wrap">
+        <div class="prog-label"><span>${used} used</span><span>${total} total</span></div>
+        <div class="prog-bar">
+          <div class="prog-fill" style="width:${pct}%;background:${barColor}"></div>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('leave-grid').innerHTML = staticCards + emergencyCard;
+}
+
+function renderQuotaInfo() {
+  const used = studentData.emergency_used;
+  const total = studentData.emergency_total;
+  const rem   = total - used;
+  const info  = document.getElementById('quota-info');
+  const btn   = document.getElementById('submit-btn');
+  const daysInput = document.getElementById('req-days');
+  const remDisplay = document.getElementById('remaining-display');
+
+  remDisplay.textContent = `${rem} day(s) remaining`;
+  remDisplay.style.color = rem <= 0 ? '#c0392b' : rem <= 2 ? '#e67e22' : '#1b4332';
+
+  if (rem <= 0) {
+    info.innerHTML = `<span style="color:#c0392b;font-weight:700">⚠️ Your emergency leave quota is exhausted.</span> Please visit the Principal's office with proper evidence for any further leave.`;
+    btn.disabled = true; btn.textContent = '🚫 Quota Exhausted';
+    daysInput.disabled = true;
+  } else {
+    info.textContent = `You have ${rem} emergency day(s) remaining out of ${total}.`;
+    btn.disabled = false; btn.textContent = '📤 Submit Request';
+    daysInput.disabled = false;
+    daysInput.max = rem;
+  }
+}
+
+// ── Submit request ────────────────────────────────────────────────────────────
+async function submitRequest() {
+  const rem = studentData.emergency_total - studentData.emergency_used;
+  if (rem <= 0) { playAlertSound(); showReqAlert('error', '⚠️ Emergency leave quota exhausted. Visit Principal\'s office with evidence.'); return; }
+
+  const days   = parseInt(document.getElementById('req-days').value);
+  const reason = document.getElementById('req-reason').value.trim();
+
+  if (!days || days < 1)  { showReqAlert('error', 'Please enter a valid number of days.'); return; }
+  if (days > rem)         { showReqAlert('warning', `You only have ${rem} day(s) remaining. Cannot request ${days} day(s).`); return; }
+  if (!reason)            { showReqAlert('error', 'Please provide a reason for your leave.'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+
+  try {
+    const r = await fetch('/api/student/leave-request', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ days_requested: days, reason })
+    });
+    const d = await r.json();
+
+    if (d.success) {
+      showReqAlert('success', '✅ Leave request submitted successfully. Awaiting admin approval.');
+      document.getElementById('req-days').value   = '';
+      document.getElementById('req-reason').value = '';
+      loadMyRequests();
+    } else if (d.error === 'QUOTA_EXHAUSTED') {
+      playAlertSound();
+      showReqAlert('error', '⚠️ ' + d.message);
+    } else {
+      showReqAlert('error', d.error || d.message || 'Submission failed.');
+    }
+  } catch(e) { showReqAlert('error', 'Server error. Try again.'); }
+  finally { btn.disabled = false; btn.textContent = '📤 Submit Request'; }
+}
+
+// ── My requests ───────────────────────────────────────────────────────────────
+async function loadMyRequests() {
+  try {
+    const r = await fetch('/api/student/leave-requests');
+    const list = await r.json();
+    const tbody = document.getElementById('my-requests-tbody');
+
+    if (!list.length) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty">No requests submitted yet</div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = list.map(req => {
+      const date = new Date(req.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+      return `
+      <tr>
+        <td style="white-space:nowrap">${date}</td>
+        <td style="text-align:center;font-weight:700;color:var(--navy)">${req.days_requested}</td>
+        <td style="max-width:250px">${req.reason}</td>
+        <td><span class="badge badge-${req.status}">${req.status.toUpperCase()}</span></td>
+        <td style="font-size:12px;color:#777">${req.admin_note || '—'}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+// ── Alert sound ───────────────────────────────────────────────────────────────
+function playAlertSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const times = [0, 0.35, 0.7];
+    times.forEach(t => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + t);
+      osc.frequency.setValueAtTime(440, ctx.currentTime + t + 0.15);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.3);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + 0.3);
+    });
+  } catch(e) {}
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function showReqAlert(type, msg) {
+  const el = document.getElementById('req-alert');
+  el.className = `alert alert-${type}`; el.textContent = msg; el.style.display = 'block';
+  if (type === 'success') setTimeout(() => { el.style.display='none'; }, 5000);
+  el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ── Notification sound & bar ─────────────────────────────────────────────────
+let notifSoundInterval = null;
+
+function playNotifSound(approved) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const seq = approved
+      ? [[523,0],[659,0.2],[784,0.38],[1047,0.54]]   // happy ascending chime
+      : [[440,0],[370,0.2],[311,0.38]];               // descending sad tone
+    seq.forEach(([freq, t]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + t);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.18);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + 0.2);
+    });
+  } catch(_) {}
+}
+
+function startNotifLoop(approved) {
+  playNotifSound(approved);
+  if (!notifSoundInterval)
+    notifSoundInterval = setInterval(() => playNotifSound(approved), 4000);
+}
+
+function stopNotifLoop() {
+  clearInterval(notifSoundInterval);
+  notifSoundInterval = null;
+}
+
+function showNotifBar(status, msg) {
+  const bar  = document.getElementById('student-notif-bar');
+  const icon = document.getElementById('student-notif-icon');
+  const text = document.getElementById('student-notif-text');
+  const approved = status === 'approved';
+  bar.className = 'notif-bar show ' + (approved ? 'approved' : 'rejected');
+  icon.textContent = approved ? '✅' : '❌';
+  text.textContent = msg;
+  startNotifLoop(approved);
+}
+
+function dismissNotif() {
+  document.getElementById('student-notif-bar').classList.remove('show');
+  stopNotifLoop();
+}
+
+// ── SSE ──────────────────────────────────────────────────────────────────────
+function initSSE() {
+  const es = new EventSource('/api/events/student');
+
+  es.addEventListener('request-updated', e => {
+    const d = JSON.parse(e.data);
+    loadDashboard();
+    loadMyRequests();
+    const approved = d.status === 'approved';
+    const msg = approved
+      ? 'Your leave request (' + d.days + ' day/s) has been APPROVED' + (d.admin_note ? ' — ' + d.admin_note : '')
+      : 'Your leave request has been REJECTED' + (d.admin_note ? ' — ' + d.admin_note : '');
+    showNotifBar(d.status, msg);
+  });
+
+  es.addEventListener('config-updated', () => {
+    loadDashboard();
+  });
+
+  es.onerror = () => { setTimeout(initSSE, 5000); es.close(); };
+}
+initSSE();
+
+async function logout() {
+  await fetch('/api/auth/logout', { method:'POST' });
+  window.location.href = '/student/login';
+}
+</script>
+</body>
+</html>
