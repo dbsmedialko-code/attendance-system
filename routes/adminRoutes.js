@@ -112,6 +112,23 @@ router.delete('/students/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── Update student emergency leave total ──────────────────────────────────
+router.put('/students/:id/emergency', async (req, res) => {
+  try {
+    const days = parseInt(req.body.emergency_total);
+    if (isNaN(days) || days < 0)
+      return res.status(400).json({ error: 'Invalid value' });
+    const student = await Student.findByIdAndUpdate(
+      req.params.id,
+      { emergency_total: days },
+      { new: true, select: '-password -__v' }
+    );
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+    sse.toStudent(student._id, 'config-updated', {});
+    res.json({ success: true, student });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.delete('/students', async (req, res) => {
   try {
     await Student.deleteMany({});

@@ -328,6 +328,28 @@ tr:hover td{background:#f9fbf9}
   </main>
 </div>
 
+<!-- Edit Emergency Leave Modal -->
+<div class="modal-overlay" id="editLeaveModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeEditLeave()">✕</button>
+    <div class="modal-title" id="edit-leave-title">Edit Emergency Leave</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px">
+      Change the total emergency leave days allocated to this student.
+    </div>
+    <div class="form-group">
+      <label>Total Emergency Leave Days</label>
+      <input type="number" id="edit-leave-days" min="0"
+        style="font-size:22px;font-weight:700;text-align:center;padding:12px;
+               border:2px solid var(--border);border-radius:8px;outline:none;width:100%">
+    </div>
+    <div class="alert" id="edit-leave-alert" style="margin-top:12px"></div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn btn-green" onclick="saveEditLeave()">💾 Save</button>
+      <button class="btn btn-outline" onclick="closeEditLeave()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Action Modal -->
 <div class="modal-overlay" id="actionModal">
   <div class="modal">
@@ -434,7 +456,8 @@ function renderStudents(list) {
           <div class="progress-fill" style="width:${pct}%;background:${barColor}"></div>
         </div>
       </td>
-      <td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-outline btn-sm" onclick="openEditLeave('${s._id}','${s.name}',${s.emergency_total})">✏️ Leave</button>
         <button class="btn btn-red btn-sm" onclick="deleteStudent('${s._id}','${s.name}')">🗑️</button>
       </td>
     </tr>`;
@@ -837,9 +860,52 @@ function initSSE() {
 }
 initSSE();
 
+// ── Edit Emergency Leave ──────────────────────────────────────────────────────
+let editLeaveStudentId = null;
+
+function openEditLeave(id, name, currentTotal) {
+  editLeaveStudentId = id;
+  document.getElementById('edit-leave-title').textContent = `Edit Emergency Leave — ${name}`;
+  document.getElementById('edit-leave-days').value = currentTotal;
+  document.getElementById('edit-leave-alert').style.display = 'none';
+  document.getElementById('editLeaveModal').classList.add('open');
+}
+
+function closeEditLeave() {
+  document.getElementById('editLeaveModal').classList.remove('open');
+  editLeaveStudentId = null;
+}
+
+async function saveEditLeave() {
+  if (!editLeaveStudentId) return;
+  const days = parseInt(document.getElementById('edit-leave-days').value);
+  if (isNaN(days) || days < 0) {
+    showAlert('edit-leave-alert', 'error', 'Enter a valid number (0 or more).');
+    return;
+  }
+  try {
+    const r = await fetch(`/api/admin/students/${editLeaveStudentId}/emergency`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emergency_total: days })
+    });
+    const d = await r.json();
+    if (d.success) {
+      closeEditLeave();
+      showAlert('upload-alert', 'success', '✅ Emergency leave days updated.');
+      loadStudents();
+    } else {
+      showAlert('edit-leave-alert', 'error', d.error);
+    }
+  } catch(e) { showAlert('edit-leave-alert', 'error', 'Update failed.'); }
+}
+
 // Close modal on overlay click
 document.getElementById('actionModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
+});
+document.getElementById('editLeaveModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditLeave();
 });
 </script>
 </body>
